@@ -18,4 +18,8 @@ path = "src/prob_2.rs"
 name = "prob_3"
 path = "src/prob_3.rs"
 
+[[bin]]
+name = "prob_4"
+path = "src/prob_4.rs"
+
 [dependencies]
