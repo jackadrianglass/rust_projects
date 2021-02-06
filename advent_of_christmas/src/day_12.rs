@@ -1,4 +1,5 @@
 use std::fs;
+use std::time;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Dir {
@@ -141,18 +142,21 @@ fn main() {
                             .expect("Unable to read file");
 
     let insts = parse_file(&contents);
+
+    let now = time::Instant::now();
     let mut ship = Ship::new();
     ship.process_inst(&insts);
 
     let dist = ship.manhattan_dist();
-    println!("Manhattan distance is {}", dist);
+    println!("Manhattan distance is {}, took {}", dist, now.elapsed().as_micros());
 
     //part 2
+    let now = time::Instant::now();
     let mut ship = Ship::new();
     ship.process_waypoint_inst(&insts);
 
     let dist = ship.manhattan_dist();
-    println!("Manhattan distance is {}", dist);
+    println!("Manhattan distance is {}, took {}", dist, now.elapsed().as_micros());
 }
 
 #[cfg(test)]

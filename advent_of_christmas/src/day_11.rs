@@ -1,3 +1,4 @@
+use std::time;
 use std::fs;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -187,9 +188,10 @@ fn main() {
     let contents = fs::read_to_string("day_11.txt")
                     .expect("Unable to read file");
 
+    let now = time::Instant::now();
     let seats = to_state_mat(&contents);
     let count = occupied_seats(&seats);
-    println!("{:?}", count);
+    println!("{:?} took {:?}", count, now.elapsed().as_millis());
 }
 
 #[cfg(test)]
