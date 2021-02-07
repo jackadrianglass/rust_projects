@@ -129,7 +129,6 @@ mod beat {
             assert_eq!(get_idx('B', Division::Binary), Ok(0x1));
             assert_eq!(get_idx('C', Division::Binary), Ok(0x3));
             assert_eq!(get_idx('D', Division::Binary), Ok(0x0));
-
         }
     }
 }
