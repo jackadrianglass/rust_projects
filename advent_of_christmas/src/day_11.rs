@@ -24,6 +24,7 @@ fn to_state_mat(contents: &str) -> Vec<Vec<State>>
     seats
 }
 
+#[allow(dead_code)]
 fn is_swappable(seats: &Vec<Vec<State>>, row: i32, col: i32) -> bool
 {
     let val = &seats[col as usize][row as usize];
