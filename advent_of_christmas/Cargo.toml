@@ -7,68 +7,72 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "day_1"
+name = "1"
 path = "src/day_1.rs"
 
 [[bin]]
-name = "day_2"
+name = "2"
 path = "src/day_2.rs"
 
 [[bin]]
-name = "day_3"
+name = "3"
 path = "src/day_3.rs"
 
 [[bin]]
-name = "day_4"
+name = "4"
 path = "src/day_4.rs"
 
 [[bin]]
-name = "day_5"
+name = "5"
 path = "src/day_5.rs"
 
 [[bin]]
-name = "day_6"
+name = "6"
 path = "src/day_6.rs"
 
 [[bin]]
-name = "day_7"
+name = "7"
 path = "src/day_7.rs"
 
 [[bin]]
-name = "day_8"
+name = "8"
 path = "src/day_8.rs"
 
 [[bin]]
-name = "day_9"
+name = "9"
 path = "src/day_9.rs"
 
 [[bin]]
-name = "day_10"
+name = "10"
 path = "src/day_10.rs"
 
 [[bin]]
-name = "day_11"
+name = "11"
 path = "src/day_11.rs"
 
 [[bin]]
-name = "day_12"
+name = "12"
 path = "src/day_12.rs"
 
 [[bin]]
-name = "day_13"
+name = "13"
 path = "src/day_13.rs"
 
 [[bin]]
-name = "day_14"
+name = "14"
 path = "src/day_14.rs"
 
 [[bin]]
-name = "day_15"
+name = "15"
 path = "src/day_15.rs"
 
 [[bin]]
-name = "day_16"
+name = "16"
 path = "src/day_16.rs"
+
+[[bin]]
+name = "17"
+path = "src/day_17.rs"
 
 [dependencies]
 regex = "*"
