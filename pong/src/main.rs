@@ -1,202 +1,197 @@
-/**
- * A working example of how to use Piston to program pong in rust.
- * Code curtosy on Tensor Programming and his youtube video here
- * https://www.youtube.com/watch?v=-JIlCYbpNnI
- * The source code found here:
- * https://github.com/tensor-programming/rust_pong_game
- */
-extern crate glutin_window;
-extern crate graphics;
-extern crate opengl_graphics;
-extern crate piston;
+use ggez::conf::{NumSamples, WindowMode, WindowSetup};
+use ggez::event;
+use ggez::graphics::{self, Color, Rect, Text};
+use ggez::{Context, GameResult};
+use glam::*;
 
-use glutin_window::GlutinWindow;
-use opengl_graphics::{GlGraphics, OpenGL};
-use piston::event_loop::{EventSettings, Events};
-use piston::input::{
-    Button, Key, PressEvent, ReleaseEvent, RenderArgs, RenderEvent, UpdateArgs, UpdateEvent,
-};
-use piston::window::WindowSettings;
-use std::process;
+struct MainState {
+    width: f32,
+    height: f32,
+    score: Vec2,
+    score_text: Text,
 
-pub struct App {
-    gl: GlGraphics,
-    left_score: i32,
-    left_pos: i32,
-    left_vel: i32,
-    right_score: i32,
-    right_pos: i32,
-    right_vel: i32,
-    ball_x: i32,
-    ball_y: i32,
-    vel_x: i32,
-    vel_y: i32,
+    paddle_bounds: Rect,
+    left: Vec2,
+    right: Vec2,
+    ldir: f32,
+    rdir: f32,
+
+    ball_bounds: Rect,
+    ball: Vec2,
+    bdir: Vec2,
 }
 
-impl App {
-    fn render(&mut self, args: &RenderArgs) {
-        use graphics::*;
-
-        const BACKGROUND: [f32; 4] = [0.0, 0.5, 0.5, 1.0];
-        const FOREGROUND: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
-        const BALL_C: [f32; 4] = [0.0, 1.0, 1.0, 1.0];
-
-        let left = rectangle::square(0.0, 0.0, 50.0);
-        let left_pos = self.left_pos as f64;
-        let right = rectangle::square(0.0, 0.0, 50.0);
-        let right_pos = self.right_pos as f64;
-
-        let ball = rectangle::square(0.0, 0.0, 10.0);
-        let ball_x = self.ball_x as f64;
-        let ball_y = self.ball_y as f64;
-
-        self.gl.draw(args.viewport(), |c, gl| {
-            clear(BACKGROUND, gl);
-            rectangle(FOREGROUND, left, c.transform.trans(-40.0, left_pos), gl);
-            rectangle(
-                FOREGROUND,
-                right,
-                c.transform.trans(args.width as f64 - 10.0, right_pos),
-                gl,
-            );
-            rectangle(BALL_C, ball, c.transform.trans(ball_x, ball_y), gl);
-        });
-    }
-
-    fn update(&mut self, _args: &UpdateArgs) {
-        //Update left padel position
-        if ( self.left_vel == 1 && self.left_pos < 291) //magic number
-            || (self.left_vel == -1 && self.left_pos >= 1)
-        {
-            self.left_pos += self.left_vel;
-        }
-
-        // Update right padel position
-        if (self.right_vel == 1 && self.right_pos < 291)
-            || (self.right_vel == -1 && self.right_pos >= 1)
-        {
-            self.right_pos += self.right_vel;
-        }
-
-        // Update ball position in the x direction
-        self.ball_x += self.vel_x;
-
-        // If the ball exits the right side of the window
-        if self.ball_x > 502 {
-            self.vel_x = -self.vel_x;
-            if self.ball_y < self.right_pos || self.ball_y > self.right_pos + 50 {
-                self.left_score += 1;
-                if self.left_score >= 5 {
-                    println!("Left wins!");
-                    process::exit(0);
-                }
-                self.ball_x = 256;
-                self.ball_y = 171;
-            }
-        }
-
-        // If the ball exits the left side of the window
-        if self.ball_x < 1 {
-            self.vel_x = -self.vel_x;
-            if self.ball_y < self.left_pos || self.ball_y > self.left_pos + 50 {
-                self.right_score += 1;
-                if self.left_score >= 5 {
-                    println!("Right wins!");
-                    process::exit(0);
-                }
-                self.ball_x = 256;
-                self.ball_y = 171;
-            }
-        }
-
-        // Update the ball's y position
-        self.ball_y += self.vel_y;
-
-        // If the ball hits the top or bottom of the window
-        if self.ball_y > 332 || self.ball_y < 1 {
-            self.vel_y = -self.vel_y;
-        }
-    }
-
-    fn press( &mut self, args: &Button){
-        if let &Button::Keyboard(key) = args {
-            match key {
-                Key::Up => {
-                    self.right_vel = -1;
-                }
-                Key::Down => {
-                    self.right_vel = 1;
-                }
-                Key::W => {
-                    self.left_vel = -1;
-                }
-                Key::S => {
-                    self.left_vel = 1;
-                }
-                _ => {}
-            }
-        }
-    }
-
-    fn release( &mut self, args: &Button){
-        if let &Button::Keyboard(key) = args {
-            match key {
-                Key::Up => {
-                    self.right_vel = 0;
-                }
-                Key::Down => {
-                    self.right_vel = 0;
-                }
-                Key::W => {
-                    self.left_vel = 0;
-                }
-                Key::S => {
-                    self.left_vel = 0;
-                }
-                _ => {}
-            }
-        }
+impl MainState {
+    fn new(width: f32, height: f32) -> GameResult<MainState> {
+        let w = width / 40.0;
+        let h = height / 8.0;
+        let s = MainState {
+            width,
+            height,
+            score: Vec2::default(),
+            score_text: Text::new("0 - 0"),
+            paddle_bounds: Rect::new(0.0, 0.0, w, h),
+            left: Vec2::new(0.0, 0.0),
+            right: Vec2::new(width - w, height / 2.0),
+            ldir: 0.0,
+            rdir: 0.0,
+            ball_bounds: Rect::new(0.0, 0.0, w, w),
+            ball: Vec2::new(width / 2.0, height / 2.0),
+            bdir: Vec2::new(1.0, 1.0),
+        };
+        Ok(s)
     }
 }
 
-fn main() {
-    let opengl = OpenGL::V3_2;
-    let mut window: GlutinWindow = WindowSettings::new("Pong", [512, 342])
-        .opengl(opengl)
-        .exit_on_esc(true)
-        .build()
-        .unwrap();
+impl MainState {
+    fn update_paddles(&mut self) {
+        const SPEED: f32 = 5.0;
 
-    let mut app = App {
-        gl: GlGraphics::new(opengl),
-        left_score: 0,
-        left_pos: 1,
-        left_vel: 0,
-        right_score: 0,
-        right_pos: 1,
-        right_vel: 0,
-        ball_x: 0,
-        ball_y: 0,
-        vel_x: 1,
-        vel_y: 1,
-    };
-
-    let mut events = Events::new(EventSettings::new());
-    while let Some(e) = events.next(&mut window) {
-        if let Some(r) = e.render_args() {
-            app.render(&r);
+        self.left.y += self.ldir * SPEED;
+        if self.left.y < 0.0 {
+            self.left.y = 0.5;
+        } else if self.left.y > self.height - self.paddle_bounds.h {
+            self.left.y = self.height - self.paddle_bounds.h - 0.5;
         }
 
-        if let Some(u) = e.update_args() {
-            app.update(&u);
-        }
-
-        if let Some(b) = e.press_args() {
-            app.press(&b);
-        }
-
-        if let Some(b) = e.release_args() {
-            app.release(&b);
+        self.right.y += self.rdir * SPEED;
+        if self.right.y < 0.0 {
+            self.right.y = 0.5;
+        } else if self.right.y > self.height - self.paddle_bounds.h {
+            self.right.y = self.height - self.paddle_bounds.h - 0.5;
         }
     }
+
+    fn update_ball(&mut self) {
+        const SPEED: f32 = 2.0;
+
+        self.ball += self.bdir * SPEED;
+
+        // top and bottom walls
+        if self.ball.y < 0.0 {
+            self.bdir.y = 1.0;
+            self.ball.y = 0.0;
+        } else if self.ball.y > self.height - self.ball_bounds.h {
+            self.bdir.y = -1.0;
+            self.ball.y = self.height - self.ball_bounds.h;
+        }
+
+        if self.intersects(&self.ball, &self.left) {
+            self.bdir.x = 1.0;
+            self.ball.x = self.paddle_bounds.w + 0.5;
+        } else if self.intersects(&self.ball, &self.right) {
+            self.bdir.x = -1.0;
+            self.ball.x = self.width - self.paddle_bounds.w - self.ball_bounds.w - 0.5;
+        }
+
+        // point conditions
+        if self.ball.x < 0.0 {
+            self.ball = Vec2::new(self.width / 2.0, self.height / 2.0);
+            self.score.x += 1.0;
+            self.score_text = Text::new(format!("{} - {}", self.score.x, self.score.y).to_owned());
+        } else if self.ball.x > self.width {
+            self.ball = Vec2::new(self.width / 2.0, self.height / 2.0);
+            self.score.y += 1.0;
+            self.score_text = Text::new(format!("{} - {}", self.score.x, self.score.y).to_owned());
+        }
+    }
+
+    fn intersects(&self, ball: &Vec2, paddle: &Vec2) -> bool {
+        ball.x + self.ball_bounds.w >= paddle.x
+            && ball.x <= paddle.x + self.paddle_bounds.w
+            && ball.y + self.ball_bounds.h >= paddle.y
+            && ball.y <= paddle.y + self.paddle_bounds.h
+    }
+}
+
+impl event::EventHandler<ggez::GameError> for MainState {
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: event::KeyCode,
+        _keymods: event::KeyMods,
+        repeat: bool,
+    ) {
+        if repeat {
+            return;
+        }
+
+        match keycode {
+            event::KeyCode::Up => self.rdir -= 1.0,
+            event::KeyCode::Down => self.rdir += 1.0,
+            event::KeyCode::Left => self.ldir -= 1.0,
+            event::KeyCode::Right => self.ldir += 1.0,
+            _ => {}
+        }
+    }
+
+    fn key_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: event::KeyCode,
+        _keymods: event::KeyMods,
+    ) {
+        match keycode {
+            event::KeyCode::Up => self.rdir += 1.0,
+            event::KeyCode::Down => self.rdir -= 1.0,
+            event::KeyCode::Left => self.ldir += 1.0,
+            event::KeyCode::Right => self.ldir -= 1.0,
+            _ => {}
+        }
+    }
+
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+        self.update_paddles();
+        self.update_ball();
+
+        Ok(())
+    }
+
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+
+        let paddle = graphics::Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::fill(),
+            self.paddle_bounds,
+            Color::WHITE,
+        )?;
+
+        let ball = graphics::Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::fill(),
+            self.ball_bounds,
+            Color::GREEN,
+        )?;
+
+        graphics::draw(
+            ctx,
+            &self.score_text,
+            (Vec2::new(
+                (self.width / 2.0) - (self.score_text.width(&ctx) / 2.0),
+                0.0,
+            ),),
+        )?;
+        graphics::draw(ctx, &paddle, (self.left,))?;
+        graphics::draw(ctx, &paddle, (self.right,))?;
+        graphics::draw(ctx, &ball, (self.ball,))?;
+        graphics::present(ctx)?;
+        Ok(())
+    }
+}
+
+fn main() -> GameResult {
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+    let cb = cb.window_setup(WindowSetup {
+        title: "Pong".to_owned(),
+        samples: NumSamples::One,
+        vsync: true,
+        icon: "".to_owned(),
+        srgb: true,
+    });
+    let m = WindowMode::default();
+    let cb = cb.window_mode(m);
+    let (ctx, event_loop) = cb.build()?;
+    let state = MainState::new(m.width, m.height)?;
+    event::run(ctx, event_loop, state);
 }
