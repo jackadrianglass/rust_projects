@@ -217,6 +217,13 @@ fn match_single_double(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
 
 // todo do floating point literals too
 fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
+    if let Some(ch) = iter.peek() {
+        match ch {
+            '0'..='9' =>{},
+            _ => return None,
+        }
+    }
+
     let mut value = String::new();
     let mut is_valid = true;
 
@@ -274,8 +281,58 @@ fn match_string_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
     Some(Token::new(Type::String { value }, line))
 }
 
-fn match_identifier_or_keyword(_iter: &mut Peekable<Chars>, _line: i32) -> Option<Token> {
-    None
+fn match_identifier_like(iter: &mut Peekable<Chars>) -> Option<(bool, String)> {
+    let mut value = String::new();
+
+    while let Some(ch) = iter.peek() {
+        match ch {
+            'a'..='z' | 'A'..='Z' | '_' | '0'..='9' => {
+                if let Some(ch) = iter.next() {
+                    value.push(ch)
+                } else {
+                    panic!("wtf")
+                }
+            }
+            _ => break,
+        };
+    }
+
+    if let Some(first) = value.chars().nth(0) {
+        let valid = !('0'..='9').contains(&first);
+        Some((valid, value))
+    } else {
+        None
+    }
+}
+
+fn match_identifier_or_keyword(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
+    if let Some((is_valid, value)) = match_identifier_like(iter) {
+        if !is_valid {
+            return Some(Token::new(Type::Invalid { value }, line));
+        }
+        let token = match value.as_str() {
+            "and" => Token::new(Type::And, line),
+            "class" => Token::new(Type::Class, line),
+            "else" => Token::new(Type::Else, line),
+            "false" => Token::new(Type::False, line),
+            "fun" => Token::new(Type::Fun, line),
+            "for" => Token::new(Type::For, line),
+            "if" => Token::new(Type::If, line),
+            "nil" => Token::new(Type::Nil, line),
+            "or" => Token::new(Type::Or, line),
+            "print" => Token::new(Type::Print, line),
+            "return" => Token::new(Type::Return, line),
+            "super" => Token::new(Type::Super, line),
+            "this" => Token::new(Type::This, line),
+            "true" => Token::new(Type::True, line),
+            "var" => Token::new(Type::Var, line),
+            "while" => Token::new(Type::While, line),
+            _ => Token::new(Type::Identifier { name: value }, line),
+        };
+        Some(token)
+    } else {
+        None
+    }
 }
 
 //----------------------------------------------------------------------
@@ -284,6 +341,8 @@ fn match_identifier_or_keyword(_iter: &mut Peekable<Chars>, _line: i32) -> Optio
 
 #[cfg(test)]
 mod tests {
+    use std::vec;
+
     use super::*;
 
     #[test]
@@ -374,5 +433,99 @@ mod tests {
             )),
             match_number_literal(&mut iter, 0)
         );
+    }
+
+    #[test]
+    fn test_match_identifier_or_keyword() {
+        let input = "andy";
+        let mut iter = input.chars().peekable();
+        assert_eq!(
+            Some(Token::new(
+                Type::Identifier {
+                    name: "andy".to_string()
+                },
+                0
+            )),
+            match_identifier_or_keyword(&mut iter, 0)
+        );
+
+        let input = "and";
+        let mut iter = input.chars().peekable();
+        assert_eq!(
+            Some(Token::new(Type::And, 0)),
+            match_identifier_or_keyword(&mut iter, 0)
+        );
+
+        let input = "fun ";
+        let mut iter = input.chars().peekable();
+        assert_eq!(
+            Some(Token::new(Type::Fun, 0)),
+            match_identifier_or_keyword(&mut iter, 0)
+        );
+
+        let input = "01tony";
+        let mut iter = input.chars().peekable();
+        assert_eq!(
+            Some(Token::new(
+                Type::Invalid {
+                    value: "01tony".to_string()
+                },
+                0
+            )),
+            match_identifier_or_keyword(&mut iter, 0)
+        );
+
+        let input = "";
+        let mut iter = input.chars().peekable();
+        assert_eq!(None, match_identifier_or_keyword(&mut iter, 0));
+    }
+
+    #[test]
+    fn test_lex() {
+        let input = "fun func(a, b) {return a + b; }";
+        let expected = vec![
+            Token::new(Type::Fun, 0),
+            Token::new(
+                Type::Identifier {
+                    name: "func".to_string(),
+                },
+                0,
+            ),
+            Token::new(Type::LParen, 0),
+            Token::new(
+                Type::Identifier {
+                    name: "a".to_string(),
+                },
+                0,
+            ),
+            Token::new(Type::Comma, 0),
+            Token::new(
+                Type::Identifier {
+                    name: "b".to_string(),
+                },
+                0,
+            ),
+            Token::new(Type::RParen, 0),
+            Token::new(Type::LBrace, 0),
+            Token::new(Type::Return, 0),
+            Token::new(
+                Type::Identifier {
+                    name: "a".to_string(),
+                },
+                0,
+            ),
+            Token::new(Type::Plus, 0),
+            Token::new(
+                Type::Identifier {
+                    name: "b".to_string(),
+                },
+                0,
+            ),
+            Token::new(Type::Semicolon, 0),
+            Token::new(Type::RBrace, 0),
+            Token::new(Type::Eof, 0),
+        ];
+
+        assert_eq!(lex(&input), expected);
     }
 }
