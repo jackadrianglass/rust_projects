@@ -1,5 +1,5 @@
-use specs::prelude::*;
 use crate::components::*;
+use specs::prelude::*;
 
 pub fn load_map(world: &mut World, map_string: String) {
     // read all lines
@@ -27,13 +27,21 @@ pub fn load_map(world: &mut World, map_string: String) {
                     create_floor(world, position);
                     create_player(world, position);
                 }
-                "B" => {
+                "BB" => {
                     create_floor(world, position);
-                    create_box(world, position);
+                    create_box(world, position, BoxColour::Blue);
                 }
-                "S" => {
+                "RB" => {
                     create_floor(world, position);
-                    create_box_spot(world, position);
+                    create_box(world, position, BoxColour::Red);
+                }
+                "BS" => {
+                    create_floor(world, position);
+                    create_box_spot(world, position, BoxColour::Blue);
+                }
+                "RS" => {
+                    create_floor(world, position);
+                    create_box_spot(world, position, BoxColour::Red);
                 }
                 "N" => (),
                 c => panic!("unrecognized map item {}", c),
@@ -46,15 +54,14 @@ pub fn initialize_level(world: &mut World) {
     const MAP: &str = "
     N N W W W W W W
     W W W . . . . W
-    W . . . B . . W
-    W . . . B . . W 
+    W . . . BB . . W
+    W . . . RB . . W 
     W . P . . . . W
-    W . . . . . . W
-    W . . S . . . W
+    W . . . . RS . W
+    W . . BS . . . W
     W . . . . . . W
     W W W W W W W W
     ";
 
     load_map(world, MAP.to_string());
 }
-

@@ -1,22 +1,32 @@
-use ggez::{Context, GameResult};
 use ggez::event::EventHandler;
 use ggez::input::keyboard::{KeyCode, KeyMods};
+use ggez::{timer, Context, GameResult};
 
 use specs::prelude::*;
 
-use crate::systems::{InputSystem, RenderingSystem};
-use crate::resources::InputQueue;
+use crate::resources::{InputQueue, Time};
+use crate::systems::{GameplayStateSystem, InputSystem, RenderingSystem};
 
 pub struct Game {
     pub world: World,
 }
 
 impl EventHandler for Game {
-    fn update(&mut self, _context: &mut Context) -> GameResult {
+    fn update(&mut self, context: &mut Context) -> GameResult {
         // run input system
         {
             let mut is = InputSystem {};
             is.run_now(&self.world);
+        }
+        // run gameplay state system
+        {
+            let mut gss = GameplayStateSystem {};
+            gss.run_now(&self.world);
+        }
+        // Get and update time resource
+        {
+            let mut time = self.world.write_resource::<Time>();
+            time.delta += timer::delta(context);
         }
         Ok(())
     }
