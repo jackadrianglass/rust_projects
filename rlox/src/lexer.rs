@@ -31,7 +31,8 @@ pub enum Type {
     // Literals
     Identifier { name: String },
     String { value: String },
-    Number { value: i64 },
+    Int { value: i64 },
+    Float { value: f64 },
 
     // Keywords
     And,
@@ -71,44 +72,66 @@ impl Token {
 // Lexer
 //----------------------------------------------------------------------
 
-pub fn lex(input: &str) -> Vec<Token> {
-    let mut tokens = Vec::new();
-    let mut line = 0;
-    let mut iter = input.chars().peekable();
+pub struct Lexer<'a> {
+    iter: Peekable<Chars<'a>>,
+    line: i32,
+    done: bool,
+}
 
-    loop {
-        consume_whitespace(&mut iter, &mut line);
-        consume_comments(&mut iter);
+impl<'a> Lexer<'a> {
+    pub fn new(src: &'a str) -> Self {
+        Self {
+            iter: src.chars().peekable(),
+            line: 0,
+            done: false,
+        }
+    }
+}
 
-        if let Some(_) = iter.peek() {
-            if let Some(token) = match_single(&mut iter, line) {
-                tokens.push(token);
-            } else if let Some(token) = match_single_double(&mut iter, line) {
-                tokens.push(token);
-            } else if let Some(token) = match_number_literal(&mut iter, line) {
-                tokens.push(token);
-            } else if let Some(token) = match_string_literal(&mut iter, line) {
-                tokens.push(token);
-            } else if let Some(token) = match_identifier_or_keyword(&mut iter, line) {
-                tokens.push(token);
+impl Iterator for Lexer<'_> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        // consume as much as possible
+        loop {
+            consume_whitespace(&mut self.iter, &mut self.line);
+            if let None = consume_comments(&mut self.iter, &mut self.line) {
+                break;
+            }
+        }
+
+        if let Some(_) = self.iter.peek() {
+            if let Some(token) = match_single(&mut self.iter, self.line) {
+                return Some(token);
+            } else if let Some(token) = match_single_double(&mut self.iter, self.line) {
+                return Some(token);
+            } else if let Some(token) = match_number_literal(&mut self.iter, self.line) {
+                return Some(token);
+            } else if let Some(token) = match_string_literal(&mut self.iter, self.line) {
+                return Some(token);
+            } else if let Some(token) = match_identifier_or_keyword(&mut self.iter, self.line) {
+                return Some(token);
             } else {
-                if let Some(ch) = iter.next() {
-                    tokens.push(Token::new(
+                if let Some(ch) = self.iter.next() {
+                    return Some(Token::new(
                         Type::Invalid {
                             value: ch.to_string(),
                         },
-                        line,
+                        self.line,
                     ));
                 } else {
                     panic!("Theoretically impossible token consumption");
                 }
             }
         } else {
-            tokens.push(Token::new(Type::Eof, line));
-            break;
+            self.done = true;
+            return Some(Token::new(Type::Eof, self.line));
         }
     }
-    tokens
 }
 
 fn consume_whitespace(iter: &mut Peekable<Chars>, line: &mut i32) {
@@ -128,20 +151,54 @@ fn consume_whitespace(iter: &mut Peekable<Chars>, line: &mut i32) {
     }
 }
 
-fn consume_comments(iter: &mut Peekable<Chars>) {
+fn consume_inline_comment(iter: &mut Peekable<Chars>) {
+    while let Some(next) = iter.next() {
+        if next == '\n' {
+            break;
+        }
+    }
+}
+
+fn consume_multiline_comment(iter: &mut Peekable<Chars>, line: &mut i32) {
+    // increment iterator to start search for end of comment block
+    let _ = iter.next();
+    let _ = iter.next();
+
+    let mut hit_star = false;
+    while let Some(next) = iter.next() {
+        match next {
+            '*' => hit_star = true,
+            '/' => {
+                if hit_star {
+                    break;
+                }
+            }
+            '\n' => {
+                hit_star = false;
+                *line += 1;
+            }
+            _ => hit_star = false,
+        };
+    }
+}
+
+fn consume_comments(iter: &mut Peekable<Chars>, line: &mut i32) -> Option<()> {
     // Make a copy as there is no way to peek more than one character
     // without consuming characters
     let mut copy = iter.clone();
     if let Some('/') = copy.next() {
-        if let Some('/') = copy.next() {
-            while let Some(next) = iter.peek() {
-                if *next == '\n' {
-                    break;
-                }
-                let _ = iter.next();
-            }
+        let next = copy.next();
+
+        if let Some('/') = next {
+            consume_inline_comment(iter);
+            *line += 1;
+            return Some(());
+        } else if let Some('*') = next {
+            consume_multiline_comment(iter, line);
+            return Some(());
         }
     }
+    None
 }
 
 fn match_single(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
@@ -215,17 +272,16 @@ fn match_single_double(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
     }
 }
 
-// todo do floating point literals too
 fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
-    if let Some(ch) = iter.peek() {
-        match ch {
-            '0'..='9' =>{},
-            _ => return None,
-        }
+    if let Some('0'..='9') = iter.peek() {
+        // Can find a match
+    } else {
+        return None;
     }
 
     let mut value = String::new();
     let mut is_valid = true;
+    let mut is_floating_point = false;
 
     while let Some(ch) = iter.peek() {
         match ch {
@@ -234,6 +290,15 @@ fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
                     value.push(ch)
                 } else {
                     panic!("wtf")
+                }
+            }
+            '.' => {
+                value.push(iter.next().unwrap());
+                if is_floating_point {
+                    // can't have two periods in a number eg 2..4 or 2.3.4
+                    is_valid = false;
+                } else {
+                    is_floating_point = true;
                 }
             }
             'a'..='z' | 'A'..='Z' => {
@@ -250,15 +315,22 @@ fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
 
     if value.is_empty() {
         None
-    } else if is_valid {
+    } else if !is_valid {
+        Some(Token::new(Type::Invalid { value }, line))
+    } else if is_floating_point {
         Some(Token::new(
-            Type::Number {
+            Type::Float {
                 value: value.parse().unwrap(),
             },
             line,
         ))
     } else {
-        Some(Token::new(Type::Invalid { value }, line))
+        Some(Token::new(
+            Type::Int {
+                value: value.parse().unwrap(),
+            },
+            line,
+        ))
     }
 }
 
@@ -341,26 +413,52 @@ fn match_identifier_or_keyword(iter: &mut Peekable<Chars>, line: i32) -> Option<
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
-
     use super::*;
+    use std::vec;
 
     #[test]
     fn test_consume_comment() {
         let input = "//some random nonsense\na";
         let mut iter = input.chars().peekable();
-        consume_comments(&mut iter);
-        assert_eq!(Some(&'\n'), iter.peek());
+        let mut line = 0;
+
+        consume_comments(&mut iter, &mut line);
+        assert_eq!(Some(&'a'), iter.peek());
+        assert_eq!(line, 1);
 
         let input = "/some random nonsense\na";
         let mut iter = input.chars().peekable();
-        consume_comments(&mut iter);
+        let mut line = 0;
+        consume_comments(&mut iter, &mut line);
         assert_eq!(Some(&'/'), iter.peek());
+        assert_eq!(line, 0);
 
         let input = "//some random nonsense";
         let mut iter = input.chars().peekable();
-        consume_comments(&mut iter);
+        let mut line = 0;
+        consume_comments(&mut iter, &mut line);
         assert_eq!(None, iter.peek());
+        assert_eq!(line, 1);
+    }
+
+    #[test]
+    fn test_consume_comment_multiline() {
+        let input = "/*some random nonsense*/";
+        let mut iter = input.chars().peekable();
+        let mut line = 0;
+
+        consume_comments(&mut iter, &mut line);
+        assert_eq!(None, iter.peek());
+        assert_eq!(line, 0);
+
+        let input = "/*some random nonsense*//*other rando nonsense*/";
+        let mut iter = input.chars().peekable();
+        let mut line = 0;
+
+        consume_comments(&mut iter, &mut line);
+        consume_comments(&mut iter, &mut line);
+        assert_eq!(None, iter.peek());
+        assert_eq!(line, 0);
     }
 
     #[test]
@@ -414,11 +512,11 @@ mod tests {
     }
 
     #[test]
-    fn test_match_number_literal() {
+    fn test_match_int_literal() {
         let input = "123";
         let mut iter = input.chars().peekable();
         assert_eq!(
-            Some(Token::new(Type::Number { value: 123 }, 0)),
+            Some(Token::new(Type::Int { value: 123 }, 0)),
             match_number_literal(&mut iter, 0)
         );
 
@@ -428,6 +526,28 @@ mod tests {
             Some(Token::new(
                 Type::Invalid {
                     value: "123abc".to_owned()
+                },
+                0
+            )),
+            match_number_literal(&mut iter, 0)
+        );
+    }
+
+    #[test]
+    fn test_match_float_literal() {
+        let input = "1.23";
+        let mut iter = input.chars().peekable();
+        assert_eq!(
+            Some(Token::new(Type::Float { value: 1.23 }, 0)),
+            match_number_literal(&mut iter, 0)
+        );
+
+        let input = "1.2.3";
+        let mut iter = input.chars().peekable();
+        assert_eq!(
+            Some(Token::new(
+                Type::Invalid {
+                    value: "1.2.3".to_owned()
                 },
                 0
             )),
@@ -482,50 +602,51 @@ mod tests {
 
     #[test]
     fn test_lex() {
-        let input = "fun func(a, b) {return a + b; }";
+        let input = "//some comment\nfun func(a, b) {return a + b; }";
         let expected = vec![
-            Token::new(Type::Fun, 0),
+            Token::new(Type::Fun, 1),
             Token::new(
                 Type::Identifier {
                     name: "func".to_string(),
                 },
-                0,
+                1,
             ),
-            Token::new(Type::LParen, 0),
+            Token::new(Type::LParen, 1),
             Token::new(
                 Type::Identifier {
                     name: "a".to_string(),
                 },
-                0,
+                1,
             ),
-            Token::new(Type::Comma, 0),
+            Token::new(Type::Comma, 1),
             Token::new(
                 Type::Identifier {
                     name: "b".to_string(),
                 },
-                0,
+                1,
             ),
-            Token::new(Type::RParen, 0),
-            Token::new(Type::LBrace, 0),
-            Token::new(Type::Return, 0),
+            Token::new(Type::RParen, 1),
+            Token::new(Type::LBrace, 1),
+            Token::new(Type::Return, 1),
             Token::new(
                 Type::Identifier {
                     name: "a".to_string(),
                 },
-                0,
+                1,
             ),
-            Token::new(Type::Plus, 0),
+            Token::new(Type::Plus, 1),
             Token::new(
                 Type::Identifier {
                     name: "b".to_string(),
                 },
-                0,
+                1,
             ),
-            Token::new(Type::Semicolon, 0),
-            Token::new(Type::RBrace, 0),
-            Token::new(Type::Eof, 0),
+            Token::new(Type::Semicolon, 1),
+            Token::new(Type::RBrace, 1),
+            Token::new(Type::Eof, 1),
         ];
 
-        assert_eq!(lex(&input), expected);
+        let result: Vec<Token> = Lexer::new(input).collect();
+        assert_eq!(result, expected);
     }
 }

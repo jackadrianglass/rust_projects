@@ -1,3 +1,4 @@
+use crate::lexer::Lexer;
 use std::fs;
 use std::io::{self, Write};
 
@@ -11,7 +12,9 @@ impl Lox {
     }
 
     fn run(&self, source: &str) {
-        println!("{}", source);
+        for tok in Lexer::new(source) {
+            println!("{:?}", tok);
+        }
     }
 
     pub fn error(&mut self, line: i32, msg: &str) {
