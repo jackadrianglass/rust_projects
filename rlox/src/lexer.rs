@@ -104,33 +104,35 @@ impl Iterator for Lexer<'_> {
             }
         }
 
-        if let Some(_) = self.iter.peek() {
-            if let Some(token) = match_single(&mut self.iter, self.line) {
-                return Some(token);
-            } else if let Some(token) = match_single_double(&mut self.iter, self.line) {
-                return Some(token);
-            } else if let Some(token) = match_number_literal(&mut self.iter, self.line) {
-                return Some(token);
-            } else if let Some(token) = match_string_literal(&mut self.iter, self.line) {
-                return Some(token);
-            } else if let Some(token) = match_identifier_or_keyword(&mut self.iter, self.line) {
-                return Some(token);
-            } else {
-                if let Some(ch) = self.iter.next() {
-                    return Some(Token::new(
-                        Type::Invalid {
-                            value: ch.to_string(),
-                        },
-                        self.line,
-                    ));
-                } else {
-                    panic!("Theoretically impossible token consumption");
-                }
-            }
+        if let Some(token) = match_single(&mut self.iter, self.line) {
+            Some(token)
+        } else if let Some(token) = match_single_double(&mut self.iter, self.line) {
+            Some(token)
+        } else if let Some(token) = match_number_literal(&mut self.iter, self.line) {
+            Some(token)
+        } else if let Some(token) = match_string_literal(&mut self.iter, self.line) {
+            Some(token)
+        } else if let Some(token) = match_identifier_or_keyword(&mut self.iter, self.line) {
+            Some(token)
+        } else if let Some(token) = match_invalid(&mut self.iter, self.line) {
+            Some(token)
         } else {
             self.done = true;
-            return Some(Token::new(Type::Eof, self.line));
+            Some(Token::new(Type::Eof, self.line))
         }
+    }
+}
+
+fn match_invalid(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
+    if let Some(ch) = iter.next() {
+        Some(Token::new(
+            Type::Invalid {
+                value: ch.to_string(),
+            },
+            line,
+        ))
+    } else {
+        None
     }
 }
 
