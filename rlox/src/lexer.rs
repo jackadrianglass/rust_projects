@@ -281,42 +281,33 @@ fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
         return None;
     }
 
-    let mut integral = String::new();
-    let mut fractional = String::new();
+    let mut value = String::new();
     let mut is_valid = true;
     let mut is_floating_point = false;
 
     while let Some(ch) = iter.peek() {
         match ch {
             '0'..='9' => {
-                if let Some(ch) = iter.next() {
-                    current.push(ch)
-                } else {
-                    panic!("wtf")
-                }
+                value.push(iter.next().unwrap())
             }
             '.' => {
-                value.push(iter.next().unwrap());
                 if is_floating_point {
                     // can't have two periods in a number eg 2..4 or 2.3.4
                     is_valid = false;
                 } else {
                     is_floating_point = true;
                 }
+                value.push(iter.next().unwrap())
             }
             'a'..='z' | 'A'..='Z' => {
-                if let Some(ch) = iter.next() {
-                    is_valid = false;
-                    current.push(ch)
-                } else {
-                    panic!("wtf")
-                }
+                is_valid = false;
+                value.push(iter.next().unwrap())
             }
             _ => break,
         };
     }
 
-    if integral.is_empty() {
+    if value.is_empty() {
         None
     } else if !is_valid {
         Some(Token::new(Type::Invalid { value }, line))
@@ -326,15 +317,44 @@ fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
                 value: value.parse().unwrap(),
             },
             line,
-    }
+            ))
+    } else {
+
+        Some(Token::new(
+            Type::Int {
+                value: value.parse().unwrap(),
+            },
+            line,
+            ))
+            }
+}
+
+fn match_string_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
+    match iter.peek() {
+        Some('"') => {}
+        _ => {
+            return None;
+        }
+    };
+
+    let mut value = String::new();
+    let _ = iter.next();
     while let Some(ch) = iter.next() {
+        if ch == '"' {
+            break;
+        }
+        value.push(ch);
+    }
+    Some(Token::new(Type::String { value }, line))
+}
+
+fn match_identifier_like(iter: &mut Peekable<Chars>) -> Option<(bool, String)> {
+    let mut value = String::new();
+
+    while let Some(ch) = iter.peek() {
         match ch {
             'a'..='z' | 'A'..='Z' | '_' | '0'..='9' => {
-                if let Some(ch) = iter.next() {
-                    value.push(ch)
-                } else {
-                    panic!("wtf")
-                }
+                value.push(iter.next().unwrap())
             }
             _ => break,
         };
@@ -494,7 +514,7 @@ mod tests {
         let input = "123.123";
         let mut iter = input.chars().peekable();
         assert_eq!(
-            Some(Token::new(Type::Number { integral: 123, fractional: 123 }, 0)),
+            Some(Token::new(Type::Float { value: 123.123 }, 0)),
             match_number_literal(&mut iter, 0)
         );
 
