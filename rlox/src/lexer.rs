@@ -3,7 +3,7 @@ use std::{iter::Peekable, str::Chars};
 //----------------------------------------------------------------------
 // Token
 //----------------------------------------------------------------------
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     // Single-character tokens
     LParen,
@@ -24,9 +24,9 @@ pub enum Type {
     Eq,
     EqEq,
     Gt,
-    GtEq,
+    Ge,
     Lt,
-    LtEq,
+    Le,
 
     // Literals
     Identifier { name: String },
@@ -56,10 +56,10 @@ pub enum Type {
     Eof,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
-    kind: Type,
-    line: i32,
+    pub kind: Type,
+    pub line: i32,
 }
 
 impl Token {
@@ -253,7 +253,7 @@ fn match_single_double(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
                 let _ = iter.next();
                 if let Some('=') = iter.peek() {
                     let _ = iter.next();
-                    Some(Token::new(Type::GtEq, line))
+                    Some(Token::new(Type::Ge, line))
                 } else {
                     Some(Token::new(Type::Gt, line))
                 }
@@ -262,7 +262,7 @@ fn match_single_double(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
                 let _ = iter.next();
                 if let Some('=') = iter.peek() {
                     let _ = iter.next();
-                    Some(Token::new(Type::LtEq, line))
+                    Some(Token::new(Type::Le, line))
                 } else {
                     Some(Token::new(Type::Lt, line))
                 }
@@ -287,9 +287,7 @@ fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
 
     while let Some(ch) = iter.peek() {
         match ch {
-            '0'..='9' => {
-                value.push(iter.next().unwrap())
-            }
+            '0'..='9' => value.push(iter.next().unwrap()),
             '.' => {
                 if is_floating_point {
                     // can't have two periods in a number eg 2..4 or 2.3.4
@@ -317,16 +315,15 @@ fn match_number_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> 
                 value: value.parse().unwrap(),
             },
             line,
-            ))
+        ))
     } else {
-
         Some(Token::new(
             Type::Int {
                 value: value.parse().unwrap(),
             },
             line,
-            ))
-            }
+        ))
+    }
 }
 
 fn match_string_literal(iter: &mut Peekable<Chars>, line: i32) -> Option<Token> {
@@ -353,9 +350,7 @@ fn match_identifier_like(iter: &mut Peekable<Chars>) -> Option<(bool, String)> {
 
     while let Some(ch) = iter.peek() {
         match ch {
-            'a'..='z' | 'A'..='Z' | '_' | '0'..='9' => {
-                value.push(iter.next().unwrap())
-            }
+            'a'..='z' | 'A'..='Z' | '_' | '0'..='9' => value.push(iter.next().unwrap()),
             _ => break,
         };
     }
@@ -517,7 +512,6 @@ mod tests {
             Some(Token::new(Type::Float { value: 123.123 }, 0)),
             match_number_literal(&mut iter, 0)
         );
-
 
         let input = "123abc";
         let mut iter = input.chars().peekable();

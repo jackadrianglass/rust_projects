@@ -1,7 +1,9 @@
 use std::env;
 
 pub mod app;
+pub mod grammar;
 pub mod lexer;
+pub mod parser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
