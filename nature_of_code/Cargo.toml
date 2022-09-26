@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+  "random_walker"
+]
+
+resolver = "2"
