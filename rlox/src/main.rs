@@ -1,6 +1,7 @@
 use std::env;
 
 pub mod app;
+pub mod evaluation;
 pub mod grammar;
 pub mod lexer;
 pub mod parser;

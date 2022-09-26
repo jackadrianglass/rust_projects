@@ -1,4 +1,6 @@
-use crate::lexer::Lexer;
+use crate::evaluation::evaluate;
+use crate::lexer::{Lexer, Token};
+use crate::parser::Parser;
 use std::fs;
 use std::io::{self, Write};
 
@@ -12,8 +14,13 @@ impl Lox {
     }
 
     fn run(&self, source: &str) {
-        for tok in Lexer::new(source) {
-            println!("{:?}", tok);
+        let tokens: Vec<Token> = Lexer::new(source).collect();
+        let mut parser = Parser::new(tokens);
+        let tree = parser.parse();
+        println!("{:?}", tree);
+        if let Ok(tree) = tree {
+            let result = evaluate(&tree);
+            println!("Result is {:?}", result);
         }
     }
 

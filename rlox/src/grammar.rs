@@ -10,7 +10,7 @@ pub enum Expr {
 pub enum Literal {
     String(String),
     Float(f64),
-    Int(i64),
+    Int(i32),
     True,
     False,
     Nil,

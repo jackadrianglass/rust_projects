@@ -31,7 +31,7 @@ pub enum Type {
     // Literals
     Identifier { name: String },
     String { value: String },
-    Int { value: i64 },
+    Int { value: i32 },
     Float { value: f64 },
 
     // Keywords

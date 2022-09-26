@@ -2,7 +2,7 @@
 use crate::grammar::*;
 use crate::lexer::{Token, Type};
 
-struct Parser {
+pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
 }
@@ -11,8 +11,10 @@ impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
+
     pub fn parse(&mut self) -> Result<Expr, ()> {
-        Err(())
+        self.current = 0; // reset at beginning
+        self.expression()
     }
 
     fn peek(&self) -> Option<Token> {
@@ -233,7 +235,7 @@ mod tests {
                         Box::new(Expr::Literal(Literal::Int(8))),
                     )),
                     BinaryOp::Plus,
-                    Box::new(Expr::Literal(Literal::Int(1)))
+                    Box::new(Expr::Literal(Literal::Int(1))),
                 )),
             ),
             (
@@ -245,7 +247,7 @@ mod tests {
                         Box::new(Expr::Literal(Literal::Int(10))),
                         BinaryOp::Divide,
                         Box::new(Expr::Literal(Literal::Int(5))),
-                    ))
+                    )),
                 )),
             ),
         ];
@@ -268,7 +270,7 @@ mod tests {
                         Box::new(Expr::Literal(Literal::Int(8))),
                     )),
                     BinaryOp::Gt,
-                    Box::new(Expr::Literal(Literal::Int(1)))
+                    Box::new(Expr::Literal(Literal::Int(1))),
                 )),
             ),
             (
@@ -280,7 +282,7 @@ mod tests {
                         Box::new(Expr::Literal(Literal::Int(10))),
                         BinaryOp::Plus,
                         Box::new(Expr::Literal(Literal::Int(5))),
-                    ))
+                    )),
                 )),
             ),
         ];
@@ -303,7 +305,7 @@ mod tests {
                         Box::new(Expr::Literal(Literal::Int(8))),
                     )),
                     BinaryOp::Eq,
-                    Box::new(Expr::Literal(Literal::Int(1)))
+                    Box::new(Expr::Literal(Literal::Int(1))),
                 )),
             ),
             (
@@ -315,7 +317,7 @@ mod tests {
                         Box::new(Expr::Literal(Literal::Int(10))),
                         BinaryOp::Plus,
                         Box::new(Expr::Literal(Literal::Int(5))),
-                    ))
+                    )),
                 )),
             ),
         ];
