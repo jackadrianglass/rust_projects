@@ -1,7 +1,9 @@
 [workspace]
 
 members = [
-  "random_walker"
+  "random_walker",
+  "gauss_distribution",
+  "perlin_basic",
 ]
 
 resolver = "2"
