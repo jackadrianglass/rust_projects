@@ -4,6 +4,7 @@ members = [
   "random_walker",
   "gauss_distribution",
   "perlin_basic",
+  "bouncing_ball",
 ]
 
 resolver = "2"
