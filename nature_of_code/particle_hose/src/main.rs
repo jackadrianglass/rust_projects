@@ -15,9 +15,9 @@ struct Particle {
 }
 
 impl Particle {
-    fn new() -> Self {
+    fn new(mouse_pos: Vec2) -> Self {
         Self {
-            pos: Vec2::new(0.0, 200.0),
+            pos: mouse_pos,
             vel: Vec2::new(random_f32() * 8.0 - 4.0, random_f32() * 5.0),
             acc: Vec2::new(0.0, -0.15),
             rotation: 0.0,
@@ -81,7 +81,7 @@ fn model(app: &App) -> Model {
     Model { egui, particles }
 }
 
-fn update(_app: &App, model: &mut Model, update: Update) {
+fn update(app: &App, model: &mut Model, update: Update) {
     let egui = &mut model.egui;
 
     egui.set_elapsed_time(update.since_start);
@@ -100,7 +100,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
 
     model.particles.retain(|p| !p.is_dead());
     if model.particles.len() < 200 {
-        model.particles.push(Particle::new());
+        model.particles.push(Particle::new(app.mouse.position()));
     }
 }
 
