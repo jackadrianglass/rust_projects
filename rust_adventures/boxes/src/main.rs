@@ -1,10 +1,11 @@
 mod ui;
 
-use ui::*;
 use bevy::prelude::*;
+use bevy_easings::*;
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use std::{cmp::Ordering, collections::HashMap};
+use ui::*;
 
 const TILE_SIZE: f32 = 40.0;
 const TILE_SPACER: f32 = 10.0;
@@ -12,6 +13,7 @@ const TILE_SPACER: f32 = 10.0;
 #[derive(Resource, Default)]
 struct Game {
     score: u32,
+    best_score: u32,
 }
 
 #[derive(States, Default, Clone, Hash, Debug, PartialEq, Eq)]
@@ -138,13 +140,15 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(GameUiPlugin)
+        .add_plugin(EasingsPlugin)
         .init_resource::<FontSpec>()
         .init_resource::<Game>()
         .add_event::<NewTileEvent>()
         .add_state::<GameState>()
         .add_startup_system(setup)
         .add_startup_system(spawn_board)
-        .add_startup_system(spawn_tiles.in_base_set(StartupSet::PostStartup))
+        .add_system(game_reset.in_schedule(OnEnter(GameState::Playing)))
+        .add_system(spawn_tiles.in_schedule(OnEnter(GameState::Playing)))
         .add_system(render_tile_points.in_set(OnUpdate(GameState::Playing)))
         .add_system(board_shift.in_set(OnUpdate(GameState::Playing)))
         .add_system(render_tiles.in_set(OnUpdate(GameState::Playing)))
@@ -253,6 +257,10 @@ fn board_shift(
             tile.1.value *= 2;
             game.score += tile.1.value;
 
+            if game.score > game.best_score {
+                game.best_score = game.score;
+            }
+
             cmds.entity(tile_next_instance.0).despawn_recursive();
             if let Some(future) = it.peek() {
                 if board_shift.get_row_pos(&tile.2) != board_shift.get_row_pos(&future.2) {
@@ -267,14 +275,22 @@ fn board_shift(
 }
 
 fn render_tiles(
-    mut tiles: Query<(&mut Transform, &Position, Changed<Position>)>,
+    mut cmds: Commands,
+    tiles: Query<(Entity, &mut Transform, &Position, Changed<Position>)>,
     query_board: Query<&Board>,
 ) {
     let board = query_board.single();
-    for (mut transform, pos, pos_changed) in tiles.iter_mut() {
+    for (entity, transform, pos, pos_changed) in tiles.iter() {
         if pos_changed {
-            transform.translation.x = board.cell_position_to_physical(pos.x);
-            transform.translation.y = board.cell_position_to_physical(pos.y);
+            let x = board.cell_position_to_physical(pos.x);
+            let y = board.cell_position_to_physical(pos.y);
+            cmds.entity(entity).insert(transform.ease_to(
+                Transform::from_xyz(x, y, transform.translation.z),
+                EaseFunction::QuadraticInOut,
+                EasingType::Once {
+                    duration: std::time::Duration::from_millis(100),
+                },
+            ));
         }
     }
 }
@@ -344,33 +360,50 @@ fn spawn_tile(cmds: &mut Commands, font_spec: &Res<FontSpec>, board: &Board, pos
     .insert(pos);
 }
 
-fn game_over(query_board: Query<&Board>, tiles: Query<(&Position, &Points)>, mut run_state: ResMut<NextState<GameState>>) {
+fn game_over(
+    query_board: Query<&Board>,
+    tiles: Query<(&Position, &Points)>,
+    mut run_state: ResMut<NextState<GameState>>,
+) {
     let board = query_board.single();
     let tile_map: HashMap<&Position, &Points> = tiles.iter().collect();
 
-    if tile_map.len() != board.num_tiles() { return; }
+    if tile_map.len() != board.num_tiles() {
+        return;
+    }
 
     let neighbor_points = [(-1, 0), (1, 0), (0, 1), (0, -1)];
     let board_range = 0..(board.size as i8);
 
-    let has_move = tiles.iter().any(|(pos, value)|{
-        neighbor_points.iter().filter_map(|(x, y)| {
-            let new_x = pos.x as i8 + x;
-            let new_y = pos.y as i8 + y;
+    let has_move = tiles.iter().any(|(pos, value)| {
+        neighbor_points
+            .iter()
+            .filter_map(|(x, y)| {
+                let new_x = pos.x as i8 + x;
+                let new_y = pos.y as i8 + y;
 
-            if !(board_range.contains(&new_x) && board_range.contains(&new_y)) {
-                return None;
-            }
+                if !(board_range.contains(&new_x) && board_range.contains(&new_y)) {
+                    return None;
+                }
 
-            tile_map.get(&Position{
-                x: new_x.try_into().unwrap(),
-                y: new_y.try_into().unwrap(),
+                tile_map.get(&Position {
+                    x: new_x.try_into().unwrap(),
+                    y: new_y.try_into().unwrap(),
+                })
             })
-        }).any(|v| *v == value)
+            .any(|v| *v == value)
     });
 
     if !has_move {
         dbg!("GAME OVER!");
         run_state.set(GameState::GameOver);
     }
+}
+
+fn game_reset(mut cmds: Commands, mut game: ResMut<Game>, tiles: Query<Entity, With<Position>>) {
+    for tile in tiles.iter() {
+        cmds.entity(tile).despawn_recursive();
+    }
+
+    game.score = 0;
 }
