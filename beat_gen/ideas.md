@@ -33,6 +33,7 @@ x x   x
 x   x x
 
  _____
+
  -|-|-|
   x x x
 
@@ -85,21 +86,15 @@ Bars: How many bars of a beat to generate
 Grouping: How many beats per pulse (so if the pulse is 4(quarter notes),
 then a quaternary grouping would be sixteenth notes) 
 
-### TODO
-  * Need a way to say what kind of thing to generate
-    * Benny alphabet grooves
-    * Benny 3s, 5s, 7s groupings grooves
-    * Filter out letters from generator
-  * Need a way to display the grooves
-    * See above
-    * Need to be able to pick which instrument to generate for
-    * Need to be able to say what happens to the other instruments
-    * UI?
-    * If it's a triplet groove, convert to 8ths so that you don't have to display
-    a billion 3s
-
-     _____
-    |-|-|-|
-4 | H . H .
-- | S . . .
-4 | B . . .
+# TODO
+* Need a way to say what kind of thing to generate
+  * Benny alphabet grooves
+  * Benny 3s, 5s, 7s groupings grooves
+  * Filter out letters from generator
+* Need a way to display the grooves
+  * See above
+  * Need to be able to pick which instrument to generate for
+  * Need to be able to say what happens to the other instruments
+  * UI?
+  * If it's a triplet groove, convert to 8ths so that you don't have to display
+  a billion 3s

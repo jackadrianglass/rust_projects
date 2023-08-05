@@ -1,25 +1,27 @@
 extern crate clap;
 use clap::{App, Arg};
 
-use crate::generator::{Grouping, TimeSignature, Structure};
-use crate::generator::benny::{Filter, gen_groove};
+use crate::generator::benny::{gen_funk_groove, gen_jazz_groove};
 use crate::display::ascii::display_groove;
 use crate::display::gscribe::gen_groovescribe_link;
 
 #[derive(Debug)]
 struct Args {
-    structure: Structure,
-    filters: Vec<Filter>,
+    bars: i32, 
+    style: String,
+    // filters: Vec<Filter>,
 }
 
 pub fn run_cli() {
     let args = parse_args();
-    println!("{:?}", args);
 
-    let groove = gen_groove(args.structure);
+    let groove = match args.style.as_str() {
+        "funk" => gen_funk_groove(args.bars),
+        "jazz" => gen_jazz_groove(args.bars),
+        _ => panic!("Alien style here!"),
+    };
     display_groove(&groove);
     gen_groovescribe_link(&groove);
-    
 }
 
 fn parse_args() -> Args {
@@ -35,25 +37,24 @@ fn parse_args() -> Args {
                 .validator(|val| match val.parse::<i32>() {
                     Ok(val) => {
                         if val < 1 {
-                            return Err(String::from("Bars must be greater than 1"));
+                            Err(String::from("Bars must be greater than 1"))
                         } else {
-                            return Ok(());
+                            Ok(())
                         }
                     }
                     Err(_) => return Err(String::from("Bars must be an integer")),
                 }),
         )
         .arg(
-            Arg::with_name("grouping")
-                .default_value("4")
-                .short("g")
-                .long("grouping"),
-        )
-        .arg(
-            Arg::with_name("time_signature")
-                .default_value("4/4")
-                .short("t")
-                .long("time_signature"),
+            Arg::with_name("style")
+                .default_value("funk")
+                .short("s")
+                .long("style")
+                .validator(|val| match val.as_str() {
+                    "funk" => return Ok(()),
+                    "jazz" => return Ok(()),
+                    _ => return Err(String::from("Only funk and jazz my good sir")),
+                }),
         )
         .arg(
             Arg::with_name("filters")
@@ -63,25 +64,13 @@ fn parse_args() -> Args {
         .get_matches();
 
     let bars = matches.value_of("bars").unwrap().parse().unwrap();
-    let grouping = Grouping::from_str(matches.value_of("grouping").unwrap())
-        .expect("No matching grouping found");
-    let time_signature =
-        TimeSignature::from_str(matches.value_of("time_signature").unwrap()).unwrap();
-
-    if time_signature.divisions != 4 {
-        println!("Only supports quarter note subdivisions");
-        std::process::exit(0);
-    }
-
-    let filters: Vec<_> = matches.values_of("filters").unwrap().collect();
-    let filters = filters.iter().map(|val| Filter::from_str(val, &grouping).unwrap()).collect();
+    let style = matches.value_of("style").unwrap();
+    // let filters: Vec<_> = matches.values_of("filters").unwrap().collect();
+    // let filters = filters.iter().map(|val| Filter::from_str(val, &grouping).unwrap()).collect();
 
     Args{
-        structure: Structure {
-            time_signature,
-            bars,
-            grouping,
-        },
-        filters
+        bars,
+        style: style.to_string(),
+        // filters
     }
 }

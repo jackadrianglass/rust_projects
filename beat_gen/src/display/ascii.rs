@@ -10,7 +10,7 @@ fn display_ascii_notes(structure: &Structure) {
 
     let top_bar = match structure.grouping {
         Grouping::Binary => " _ ",
-        Grouping::Ternary => " ___ ",
+        Grouping::Ternary => " _3_ ",
         Grouping::Quaternary => " _____ ",
     };
 
@@ -68,6 +68,7 @@ pub fn display_groove(groove: &Groove) {
     if ts.number > 9 {
         print!("\n{}", ts.number);
     } else {
+        // note the trailing whitespace
         print!("\n{} ", ts.number);
     }
     display_seq(&groove.high_hat, &groove.structure, 'H');

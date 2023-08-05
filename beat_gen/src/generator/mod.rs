@@ -12,7 +12,7 @@ pub struct Groove {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Structure {
     pub time_signature: TimeSignature,
     pub grouping: Grouping,
@@ -62,7 +62,7 @@ impl Grouping {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TimeSignature {
     pub number: i32,
     pub divisions: i32

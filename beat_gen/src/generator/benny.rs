@@ -92,8 +92,41 @@ pub fn get_hex(letter: &char, division: &Grouping) -> Result<i8, ()> {
     }
 }
 
-pub fn gen_groove(structure: Structure) -> Groove {
-    let high_hat = gen_sequence(&structure);
+pub fn gen_funk_groove(bars: i32) -> Groove {
+    let structure = Structure {
+        time_signature: TimeSignature{number: 4, divisions: 4},
+        grouping: Grouping::Quaternary,
+        bars
+    };
+    let hh_pattern = "H~".to_string() + &"IIII".repeat(bars as usize);
+    let snare_pattern = "H~".to_string() + &"PAPA".repeat(bars as usize);
+    let Filter::Sequence{values: high_hat, ..} = Filter::from_str(&hh_pattern, &structure.grouping).unwrap() else {
+        panic!("Ya done goofed the high hat sequence");
+    };
+    let Filter::Sequence{values: snare, ..} = Filter::from_str(&snare_pattern, &structure.grouping).unwrap() else {
+        panic!("Ya done goofed the snare sequence");
+    };
+    let bass = gen_sequence(&structure);
+
+    Groove {
+        structure,
+        high_hat,
+        snare,
+        bass,
+    }
+}
+
+pub fn gen_jazz_groove(bars: i32) -> Groove {
+    let structure = Structure {
+        time_signature: TimeSignature{number: 4, divisions: 4},
+        grouping: Grouping::Ternary,
+        bars
+    };
+    let hh_pattern = "H~".to_string() + &"QVQV".repeat(bars as usize);
+    let Filter::Sequence{values: high_hat, ..} = Filter::from_str(&hh_pattern, &structure.grouping).unwrap() else {
+        panic!("Ya done goofed the high hat sequence");
+    };
+
     let snare = gen_sequence(&structure);
     let bass = gen_sequence(&structure);
 
@@ -104,6 +137,7 @@ pub fn gen_groove(structure: Structure) -> Groove {
         bass,
     }
 }
+
 
 fn gen_sequence(structure: &Structure) -> Vec<i8> {
     let length = (structure.time_signature.number * structure.bars) as usize;
