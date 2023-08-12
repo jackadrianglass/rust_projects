@@ -45,6 +45,9 @@ fn main() {
     let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), dimensions);
     let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
 
+    // the direction of the light
+    let light = [-1.0, 0.4, 0.9f32];
+
     event_loop.run(move |loop_event, _, control_flow| match loop_event {
         glutin::event::Event::WindowEvent { event, .. } => match event {
             glutin::event::WindowEvent::CloseRequested => {
@@ -68,9 +71,19 @@ fn main() {
                     [0.0, 0.0, 0.01, 0.0],
                     [0.0, 0.0, 0.0, 1.0f32],
                 ],
-                tex: &texture
+                tex: &texture,
+                u_light: light,
             };
-            target.clear_color(0.43921568627, 0.50196078431, 0.56470588235, 1.0);
+            target.clear_color_and_depth((0.43921568627, 0.50196078431, 0.56470588235, 1.0), 1.0);
+
+            let params = glium::DrawParameters {
+                depth: glium::Depth {
+                    test: glium::draw_parameters::DepthTest::IfLess,
+                    write: true,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
 
             target
                 .draw(
@@ -78,7 +91,7 @@ fn main() {
                     &indices,
                     &program,
                     &uniforms,
-                    &Default::default(),
+                    &params,
                 )
                 .unwrap();
 
