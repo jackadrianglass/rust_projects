@@ -1,3 +1,9 @@
+# TODO
+- [ ] Want to filter out certain letters
+- [ ] Want to generate a groove based on groupings
+  - Base it on 3s, 5s, 7s. Base it on the number of bars
+- [ ] Permutate the idea
+
 # Ideas
 
 * Generator has including and excluding letters or numbers
@@ -77,24 +83,3 @@ B B . B         B
 
 
 O...,...  . O . .   . . O .   . . . O
-
-# How to
-## Organization of a bar
-### Current
-Time signature: "Number of beats"/"Division that is the pulse"
-Bars: How many bars of a beat to generate
-Grouping: How many beats per pulse (so if the pulse is 4(quarter notes),
-then a quaternary grouping would be sixteenth notes) 
-
-# TODO
-* Need a way to say what kind of thing to generate
-  * Benny alphabet grooves
-  * Benny 3s, 5s, 7s groupings grooves
-  * Filter out letters from generator
-* Need a way to display the grooves
-  * See above
-  * Need to be able to pick which instrument to generate for
-  * Need to be able to say what happens to the other instruments
-  * UI?
-  * If it's a triplet groove, convert to 8ths so that you don't have to display
-  a billion 3s

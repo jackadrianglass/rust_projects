@@ -9,7 +9,6 @@ fn display_ascii_notes(structure: &Structure) {
     let num_beats = ts.number * structure.bars as i32;
 
     let top_bar = match structure.grouping {
-        Grouping::Binary => " _ ",
         Grouping::Ternary => " _3_ ",
         Grouping::Quaternary => " _____ ",
     };
@@ -23,7 +22,6 @@ fn display_ascii_notes(structure: &Structure) {
     print!("\n  ");
 
     let mid_bar = match structure.grouping {
-        Grouping::Binary => "| |",
         Grouping::Ternary => "| | |",
         Grouping::Quaternary => "|-|-|-|",
     };

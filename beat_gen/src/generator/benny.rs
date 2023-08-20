@@ -2,7 +2,6 @@
 use super::*;
 
 //Ordered so that they mirror how binary maps out
-static BINARY: [char; 4] = ['D', 'B', 'A', 'C'];
 static TERNARY: [char; 8] = ['X', 'S', 'R', 'U', 'Q', 'V', 'T', 'W'];
 static QUATERNARY: [char; 16] = [
     'P', 'D', 'C', 'G', 'B', 'J', 'F', 'L', 'A', 'H', 'I', 'M', 'E', 'N', 'K', 'O',
@@ -12,26 +11,15 @@ static QUATERNARY: [char; 16] = [
 pub enum Inst {
     HighHat,
     Snare,
-    Bass
+    Bass,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Filter {
-    Random{
-        inst: Inst,
-    },
-    Include {
-        inst: Inst,
-        values: Vec<i8>,
-    },
-    Exclude {
-        inst: Inst,
-        values: Vec<i8>,
-    },
-    Sequence {
-        inst: Inst,
-        values: Vec<i8>,
-    }
+    Random { inst: Inst },
+    Include { inst: Inst, values: Vec<i8> },
+    Exclude { inst: Inst, values: Vec<i8> },
+    Sequence { inst: Inst, values: Vec<i8> },
 }
 
 impl Filter {
@@ -43,36 +31,23 @@ impl Filter {
             Some(_) => return Err(()),
             None => return Err(()),
         };
-        let values: Vec<i8> = src[2..].chars().map(|val| get_hex(&val, grouping).unwrap()).collect();
+        let values: Vec<i8> = src[2..]
+            .chars()
+            .map(|val| get_hex(&val, grouping).unwrap())
+            .collect();
 
         return match src.chars().nth(1) {
-            Some('+') => Ok(Filter::Include {
-                inst, values
-            }),
-            Some('-') => Ok(Filter::Exclude {
-                inst, values
-            }),
-            Some('~') => Ok(Filter::Sequence{
-                inst, values
-            }),
-            Some('?') => Ok(Filter::Random {
-                inst
-            }),
+            Some('+') => Ok(Filter::Include { inst, values }),
+            Some('-') => Ok(Filter::Exclude { inst, values }),
+            Some('~') => Ok(Filter::Sequence { inst, values }),
+            Some('?') => Ok(Filter::Random { inst }),
             Some(_) | None => Err(()),
-        }
+        };
     }
 }
 
 pub fn get_hex(letter: &char, division: &Grouping) -> Result<i8, ()> {
     match division {
-        Grouping::Binary => match BINARY.iter().position(|val| *val == *letter) {
-            Some(val) => {
-                return Ok(val as i8);
-            }
-            None => {
-                return Err(());
-            }
-        },
         Grouping::Ternary => match TERNARY.iter().position(|val| *val == *letter) {
             Some(val) => {
                 return Ok(val as i8);
@@ -92,11 +67,21 @@ pub fn get_hex(letter: &char, division: &Grouping) -> Result<i8, ()> {
     }
 }
 
-pub fn gen_funk_groove(bars: i32) -> Groove {
+pub fn gen_groove(style: &Style, bars: i32, gen_type: &GenerationType) -> Groove {
+    match style {
+        Style::Funk => gen_funk_groove(bars, gen_type),
+        Style::Jazz => gen_jazz_groove(bars, gen_type),
+    }
+}
+
+fn gen_funk_groove(bars: i32, gen_type: &GenerationType) -> Groove {
     let structure = Structure {
-        time_signature: TimeSignature{number: 4, divisions: 4},
+        time_signature: TimeSignature {
+            number: 4,
+            divisions: 4,
+        },
         grouping: Grouping::Quaternary,
-        bars
+        bars,
     };
     let hh_pattern = "H~".to_string() + &"IIII".repeat(bars as usize);
     let snare_pattern = "H~".to_string() + &"PAPA".repeat(bars as usize);
@@ -106,7 +91,8 @@ pub fn gen_funk_groove(bars: i32) -> Groove {
     let Filter::Sequence{values: snare, ..} = Filter::from_str(&snare_pattern, &structure.grouping).unwrap() else {
         panic!("Ya done goofed the snare sequence");
     };
-    let bass = gen_sequence(&structure);
+
+    let bass = gen_sequence(&structure, gen_type);
 
     Groove {
         structure,
@@ -116,19 +102,22 @@ pub fn gen_funk_groove(bars: i32) -> Groove {
     }
 }
 
-pub fn gen_jazz_groove(bars: i32) -> Groove {
+fn gen_jazz_groove(bars: i32, gen_type: &GenerationType) -> Groove {
     let structure = Structure {
-        time_signature: TimeSignature{number: 4, divisions: 4},
+        time_signature: TimeSignature {
+            number: 4,
+            divisions: 4,
+        },
         grouping: Grouping::Ternary,
-        bars
+        bars,
     };
     let hh_pattern = "H~".to_string() + &"QVQV".repeat(bars as usize);
     let Filter::Sequence{values: high_hat, ..} = Filter::from_str(&hh_pattern, &structure.grouping).unwrap() else {
         panic!("Ya done goofed the high hat sequence");
     };
 
-    let snare = gen_sequence(&structure);
-    let bass = gen_sequence(&structure);
+    let snare = gen_sequence(&structure, gen_type);
+    let bass = gen_sequence(&structure, gen_type);
 
     Groove {
         structure,
@@ -138,13 +127,67 @@ pub fn gen_jazz_groove(bars: i32) -> Groove {
     }
 }
 
+fn gen_sequence(structure: &Structure, gen_type: &GenerationType) -> Vec<i8> {
+    match gen_type {
+        GenerationType::Letters => gen_letter_sequence(structure),
+        GenerationType::OddGroupings => gen_letter_sequence(structure),
+    }
+}
 
-fn gen_sequence(structure: &Structure) -> Vec<i8> {
-    let length = (structure.time_signature.number * structure.bars) as usize;
+fn gen_letter_sequence(structure: &Structure) -> Vec<i8> {
+    let length = structure.length();
     let mut result = Vec::with_capacity(length);
     for _ in 0..length {
         result.push(structure.grouping.get_rand_num());
     }
+    result
+}
+
+fn gen_odd_grouping_sequence(structure: &Structure) -> Vec<i8> {
+    let mut groupings: Vec<i8> = vec![3, 5, 7];
+    let ticks = structure.ticks();
+
+    let mut seq: Vec<i8> = Vec::new();
+    let mut rng = thread_rng();
+
+    loop {
+        seq.push(groupings[rng.gen_range(0..groupings.len()) as usize]);
+        let sum: i8 = seq.iter().sum();
+        let remaining = ticks as i8 - sum;
+
+        if remaining == 0 {
+            break;
+        }
+
+        groupings = groupings
+            .iter()
+            .filter(|v| v >= &&remaining)
+            .map(|v| *v)
+            .collect();
+
+        if groupings.is_empty() {
+            seq.push(remaining);
+            break;
+        }
+    }
+
+    populate_beat_sequence(structure, &seq)
+}
+
+fn populate_beat_sequence(structure: &Structure, seq: &[i8]) -> Vec<i8> {
+    let mut result = vec![0; structure.length()];
+    let mut sum: i8 = 0;
+    let bit_init = 1 << (structure.grouping.num_beats() - 1);
+
+    for val in seq.iter() {
+        let idx = sum as usize / structure.grouping.num_beats();
+        let bit = bit_init >> sum % (structure.grouping.num_beats() as i8);
+
+        sum += *val;
+
+        result[idx] |= bit;
+    }
+
     result
 }
 
@@ -185,16 +228,45 @@ mod tests {
     }
 
     #[test]
-    fn test_get_hex_binary() {
-        assert_eq!(get_hex(&'A', &Grouping::Binary), Ok(0x2));
-        assert_eq!(get_hex(&'B', &Grouping::Binary), Ok(0x1));
-        assert_eq!(get_hex(&'C', &Grouping::Binary), Ok(0x3));
-        assert_eq!(get_hex(&'D', &Grouping::Binary), Ok(0x0));
+    fn test_get_filter() {
+        assert_eq!(
+            Ok(Filter::Include {
+                inst: Inst::HighHat,
+                values: vec![0x0, 0x1]
+            }),
+            Filter::from_str("H+PD", &Grouping::Quaternary)
+        );
     }
 
     #[test]
-    fn test_get_filter() {
-        assert_eq!(Ok(Filter::Include{inst: Inst::HighHat, values: vec![0x0, 0x1]}),
-                    Filter::from_str("H+PD", &Grouping::Quaternary));
+    fn test_populate_beat_sequence_quaternary() {
+        let seq = vec![7, 3, 3, 3];
+        let structure = Structure {
+            time_signature: TimeSignature {
+                number: 4,
+                divisions: 4,
+            },
+            grouping: Grouping::Quaternary,
+            bars: 1,
+        };
+
+        let result = populate_beat_sequence(&structure, &seq);
+        assert_eq!(result, vec![0b1000, 0b0001, 0b0010, 0b0100]);
+    }
+
+    #[test]
+    fn test_populate_beat_sequence_ternary() {
+        let seq = vec![5, 3, 3, 1];
+        let structure = Structure {
+            time_signature: TimeSignature {
+                number: 4,
+                divisions: 4,
+            },
+            grouping: Grouping::Ternary,
+            bars: 1,
+        };
+
+        let result = populate_beat_sequence(&structure, &seq);
+        assert_eq!(result, vec![0b100, 0b001, 0b001, 0b001]);
     }
 }

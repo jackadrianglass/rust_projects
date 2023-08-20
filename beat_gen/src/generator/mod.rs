@@ -13,15 +13,56 @@ pub struct Groove {
 
 
 #[derive(Debug, Clone)]
+pub enum GenerationType {
+    Letters,
+    OddGroupings,
+}
+
+impl GenerationType {
+    pub fn from_str(string: &str) -> Result<Self, ()> {
+        match string {
+            "letters" => Ok(Self::Letters),
+            "odd" => Ok(Self::OddGroupings),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Style {
+    Jazz,
+    Funk,
+}
+
+impl Style {
+    pub fn from_str(string: &str) -> Result<Self, ()> {
+        match string {
+            "jazz" => Ok(Self::Jazz),
+            "funk" => Ok(Self::Funk),
+            _ => Err(())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Structure {
     pub time_signature: TimeSignature,
     pub grouping: Grouping,
     pub bars: i32,
 }
 
+impl Structure {
+    pub fn length(&self) -> usize {
+        (self.time_signature.number * self.bars) as usize
+    }
+
+    pub fn ticks(&self) -> usize {
+        (self.time_signature.number * self.time_signature.divisions * self.bars) as usize
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum Grouping {
-    Binary,
     Ternary,
     Quaternary,
 }
@@ -29,7 +70,6 @@ pub enum Grouping {
 impl Grouping {
     pub fn from_str(src: &str) -> Result<Self, ()> {
         match src {
-            "binary" | "2" => Ok(Grouping::Binary),
             "ternary" | "3" => Ok(Grouping::Ternary),
             "quaternary" | "4" => Ok(Grouping::Quaternary),
             _ => Err(()),
@@ -38,7 +78,6 @@ impl Grouping {
 
     pub fn max_val(self) -> i8 {
         match self {
-            Grouping::Binary => 4,
             Grouping::Ternary => 8,
             Grouping::Quaternary => 16,
         }
@@ -46,7 +85,6 @@ impl Grouping {
 
     pub fn num_beats(self) -> usize {
         match self {
-            Grouping::Binary => 2,
             Grouping::Ternary => 3,
             Grouping::Quaternary => 4,
         }
@@ -55,7 +93,6 @@ impl Grouping {
     pub fn get_rand_num(self) -> i8 {
         let mut rng = thread_rng();
         match self {
-            Grouping::Binary => rng.gen_range(0..self.max_val()),
             Grouping::Ternary => rng.gen_range(0..self.max_val()),
             Grouping::Quaternary => rng.gen_range(0..self.max_val()),
         }
@@ -93,8 +130,6 @@ mod tests {
     #[test]
     fn test_get_rand_num() {
         for _ in 0..5 {
-            let val = Grouping::get_rand_num(Grouping::Binary);
-            assert!(val < 4);
             let val = Grouping::get_rand_num(Grouping::Ternary);
             assert!(val < 8);
             let val = Grouping::get_rand_num(Grouping::Quaternary);
