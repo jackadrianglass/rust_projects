@@ -46,7 +46,7 @@ fn main() {
     let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
 
     // the direction of the light
-    let light = [-1.0, 0.4, 0.9f32];
+    let light = [-1.0, 0.4, -0.4f32];
 
     event_loop.run(move |loop_event, _, control_flow| match loop_event {
         glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -64,13 +64,32 @@ fn main() {
         }
         glutin::event::Event::RedrawRequested(_) => {
             let mut target = display.draw();
+
+            let perspective = {
+                let (width, height) = target.get_dimensions();
+                let aspect_ratio = height as f32 / width as f32;
+
+                let fov = std::f32::consts::PI / 3.0;
+                let zfar = 1024.0;
+                let znear = 0.1;
+
+                let f = 1.0 / (fov / 2.0).tan();
+
+                [
+                    [f * aspect_ratio, 0.0, 0.0, 0.0],
+                    [0.0, f, 0.0, 0.0],
+                    [0.0, 0.0, (zfar + znear) / (zfar - znear), 1.0],
+                    [0.0, 0.0, -(2.0 * zfar * znear) / (zfar - znear), 0.0],
+                ]
+            };
             let uniforms = uniform! {
                 matrix: [
                     [0.01, 0.0, 0.0, 0.0 ],
                     [0.0, 0.01, 0.0, 0.0 ],
                     [0.0, 0.0, 0.01, 0.0],
-                    [0.0, 0.0, 0.0, 1.0f32],
+                    [0.0, 0.0, 2.0, 1.0f32],
                 ],
+                perspective: perspective,
                 tex: &texture,
                 u_light: light,
             };
@@ -82,6 +101,7 @@ fn main() {
                     write: true,
                     ..Default::default()
                 },
+                backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
                 ..Default::default()
             };
 
