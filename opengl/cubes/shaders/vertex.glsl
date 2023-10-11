@@ -1,10 +1,13 @@
 #version 140
 
-in vec2 position;
+in vec3 position;
+in vec3 colour;
 
-// uniform mat4 matrix;
+out vec3 f_colour;
+
+uniform mat4 matrix;
 
 void main() {
-    // gl_Position = matrix * vec4(position, 0.0, 1.0);
-    gl_Position = vec4(position, 0.0, 1.0);
+    f_colour = colour;
+    gl_Position = matrix * vec4(position, 1.0);
 }
