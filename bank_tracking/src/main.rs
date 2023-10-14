@@ -1,13 +1,64 @@
 #![allow(dead_code)]
 use chrono::prelude::NaiveDate;
+use chrono::Datelike;
 use csv::StringRecord;
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use std::io::stdin;
+use std::path::Path;
+use clap::{Parser, Subcommand, CommandFactory};
 
-#[derive(Debug, PartialEq)]
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// read in a new data set for later analysis
+    Read {
+        file_path: String
+    },
+    /// print out report of overall spending
+    Report,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+enum TransactionKind {
+    EssentialFood,
+    FunFood,
+    Recurring,
+    Essential,
+    Investment,
+    Fun,
+}
+
+impl TransactionKind {
+    fn from_usize(val: usize) -> Option<Self> {
+        match val {
+            1 => Some(Self::EssentialFood),
+            2 => Some(Self::FunFood),
+            3 => Some(Self::Recurring),
+            4 => Some(Self::Essential),
+            5 => Some(Self::Fun),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct Transaction {
-    transaction_date: NaiveDate,
+    kind: Option<TransactionKind>,
+    date: NaiveDate,
     description: String,
     cad: f32,
+}
+
+impl PartialEq for Transaction {
+    fn eq(&self, other: &Self) -> bool {
+        self.date == other.date && self.description == other.description && self.cad == other.cad
+    }
 }
 
 /// Expecting the record to be in the format of
@@ -23,40 +74,97 @@ fn get_transactions(records: &[StringRecord]) -> Vec<Transaction> {
     records
         .iter()
         .map(|val| Transaction {
-            transaction_date: NaiveDate::parse_from_str(&val[2], "%m/%d/%Y").unwrap(),
+            kind: None,
+            date: NaiveDate::parse_from_str(&val[2], "%m/%d/%Y").unwrap(),
             description: val[4].to_string(),
             cad: val[6].parse().unwrap(),
         })
         .collect()
 }
 
-fn main() {
-    let mut reader = csv::Reader::from_path("data.csv").expect("Can't find the data");
+fn categorize_transactions(transactions: &mut [Transaction]) {
+    println!("Sort the transactions into these categories");
+    println!("0. Ignore");
+    println!("1. Essential Food");
+    println!("2. Food for fun");
+    println!("3. Recurring Expenses");
+    println!("4. Essential Expenses");
+    println!("5. Fun");
+
+    for transaction in transactions.iter_mut() {
+        println!(
+            "Date {:?} - {} - {}$",
+            transaction.date, transaction.description, transaction.cad
+        );
+
+        loop {
+            let mut input = String::new();
+            stdin()
+                .read_line(&mut input)
+                .expect("Did not enter a correct string");
+
+            let Ok(choice) = input.trim().parse::<usize>() else {
+                println!("Please input a number");
+                continue;
+            };
+
+            if choice > 5 {
+                println!("Input out of range");
+                continue;
+            }
+
+            transaction.kind = TransactionKind::from_usize(choice);
+            break;
+        }
+    }
+}
+
+fn output_monthly(output_dir: &Path, transactions: &[Transaction]) {
+    if !(output_dir.exists() && output_dir.is_dir()) {
+        return;
+    }
+
+    for (year, month) in transactions.iter().map(|v| (v.date.year(), v.date.month())) {
+        let mut writer =
+            csv::Writer::from_path(output_dir.join(format!("transactions-{}-{}.csv", year, month)))
+                .unwrap();
+
+        for t in transactions
+            .iter()
+            .filter(|v| v.date.year() == year && v.date.month() == month)
+        {
+            writer.serialize(t).unwrap();
+        }
+    }
+}
+
+fn sort_new_data(file_path: &str) {
+    let mut reader = csv::Reader::from_path(file_path).expect("Can't find the data");
     let records: Vec<_> = reader
         .records()
         .into_iter()
         .map(|val| val.unwrap())
         .collect();
 
-    // TODO
-    // - split up transactions by month
-    let _transactions = get_transactions(&records);
+    let mut transactions = get_transactions(&records);
+    transactions.sort_by(|a, b| a.date.partial_cmp(&b.date).unwrap());
 
-    // TODO
-    // - split this up into a vector of categories and a vector of transaction vectors
-    let mut transactions_by_category = HashMap::<String, Vec<Transaction>>::new();
-    transactions_by_category.insert("Essential Food".to_string(), Vec::new());
-    transactions_by_category.insert("Food For Fun".to_string(), Vec::new());
-    transactions_by_category.insert("Recurring Expenses".to_string(), Vec::new());
-    transactions_by_category.insert("Essential Expenses".to_string(), Vec::new());
-    transactions_by_category.insert("Fun".to_string(), Vec::new());
+    categorize_transactions(&mut transactions);
+    output_monthly(&Path::new("monthly_transactions/"), &transactions);
+}
 
-    // TODO: Prompt the user per transaction to place into one of the categories (probably need a
-    // tui)
+fn main() {
+    let cli = Cli::parse();
 
-    // TODO:
-    // - Output results into some format for later consumption
-    // - Print out total money spent in each category and percentages of total
+    let Some(command) = cli.command else {
+        let _ = Cli::command().print_help();
+        return;
+    };
+
+    match command {
+        Commands::Read { file_path } => sort_new_data(&file_path),
+        Commands::Report => {}
+    }
 }
 
 #[cfg(test)]
@@ -79,7 +187,8 @@ mod tests {
         let transactions = get_transactions(&records);
 
         let expected = vec![Transaction {
-            transaction_date: NaiveDate::from_ymd_opt(2023, 9, 3).unwrap().into(),
+            kind: None,
+            date: NaiveDate::from_ymd_opt(2023, 9, 3).unwrap().into(),
             description: "BRAGG CREEK ESSO BRAGG CREEK AB".to_string(),
             cad: -6.7,
         }];

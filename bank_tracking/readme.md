@@ -8,8 +8,8 @@ individual expenses that you're making on the regular.
 
 # TODO
 
-- [ ] Write interactive prompt to sort through all of the transactions
-- [ ] Split the transactions by month and store them
+- [x] Write interactive prompt to sort through all of the transactions
+- [x] Split the transactions by month and store them
 - [ ] Remove duplicate transactions from newly entered statements
 - [ ] Calculate spending trends bi-weekly
     - [ ] Total expenses
@@ -19,5 +19,5 @@ individual expenses that you're making on the regular.
 - [ ] Calculate accumulation of funds in additional accounts over a period of time
 - [ ] Put all of these lovely statistics on a nice application front end that
       you can view in all of its glory
-- [ ] Have the sorting have shortcuts through the number pad
+- [x] Have the sorting have shortcuts through the number pad
 - [ ] Add runtime configurable tags for each expense through letters
