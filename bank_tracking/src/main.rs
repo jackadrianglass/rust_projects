@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 use chrono::prelude::NaiveDate;
 use chrono::Datelike;
+use clap::{CommandFactory, Parser, Subcommand};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::io::stdin;
-use std::path::Path;
-use clap::{Parser, Subcommand, CommandFactory};
+use std::path::{Path};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -17,9 +17,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// read in a new data set for later analysis
-    Read {
-        file_path: String
-    },
+    Read { file_path: String },
     /// print out report of overall spending
     Report,
 }
@@ -119,15 +117,21 @@ fn categorize_transactions(transactions: &mut [Transaction]) {
     }
 }
 
+fn month_csv(csvs_folder: &Path, year: i32, month: u32) -> String {
+    csvs_folder
+        .join(format!("transactions-{}-{}.csv", year, month))
+        .into_os_string()
+        .into_string()
+        .unwrap()
+}
+
 fn output_monthly(output_dir: &Path, transactions: &[Transaction]) {
     if !(output_dir.exists() && output_dir.is_dir()) {
         return;
     }
 
     for (year, month) in transactions.iter().map(|v| (v.date.year(), v.date.month())) {
-        let mut writer =
-            csv::Writer::from_path(output_dir.join(format!("transactions-{}-{}.csv", year, month)))
-                .unwrap();
+        let mut writer = csv::Writer::from_path(month_csv(&output_dir, year, month)).unwrap();
 
         for t in transactions
             .iter()
@@ -138,7 +142,24 @@ fn output_monthly(output_dir: &Path, transactions: &[Transaction]) {
     }
 }
 
-fn sort_new_data(file_path: &str) {
+fn read_monthly(output_dir: &Path, year_months: &[(i32, u32)]) -> Vec<Transaction> {
+    year_months
+        .iter()
+        .map(|(y, m)| month_csv(&output_dir, *y, *m))
+        .map(|p| {
+            let mut reader =
+                csv::Reader::from_path(&p).expect(&format!("Can't find the data {}", &p));
+            reader
+                .records()
+                .into_iter()
+                .map(|val| val.unwrap().deserialize::<Transaction>(None).unwrap())
+                .collect::<Vec<_>>()
+        })
+        .flatten()
+        .collect()
+}
+
+fn read_raw_data(file_path: &str) -> Vec<Transaction> {
     let mut reader = csv::Reader::from_path(file_path).expect("Can't find the data");
     let records: Vec<_> = reader
         .records()
@@ -149,8 +170,20 @@ fn sort_new_data(file_path: &str) {
     let mut transactions = get_transactions(&records);
     transactions.sort_by(|a, b| a.date.partial_cmp(&b.date).unwrap());
 
+    transactions
+}
+
+fn sort_new_data(file_path: &str) {
+    let data_path = Path::new("monthly_transactions/");
+    let mut transactions = read_raw_data(file_path);
+
+    let mut year_months: Vec<_> = transactions.iter().map(|t| (t.date.year(), t.date.month())).collect();
+    year_months.dedup();
+    let old_transactions = read_monthly(&data_path, &year_months);
+    transactions.retain(|t| !old_transactions.contains(&t));
+
     categorize_transactions(&mut transactions);
-    output_monthly(&Path::new("monthly_transactions/"), &transactions);
+    output_monthly(&data_path, &transactions);
 }
 
 fn main() {
