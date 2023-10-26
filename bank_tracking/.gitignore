@@ -1,2 +1,4 @@
-data.csv
-monthly_transactions/
+data/
+backup/
+storage/
+
