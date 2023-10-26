@@ -5,7 +5,7 @@ const DEFAULT_SNARE_NOTE: char = 'g';
 const DEFAULT_HIGH_HAT_NOTE: char = 'x';
 const DEFAULT_BASS_NOTE: char = 'o';
 
-pub fn gen_groovescribe_link(groove: &Groove) {
+pub fn gen_groovescribe_link(groove: &Groove) -> String{
     let high_hat_string =
         gen_groovescribe_seq(&groove.high_hat, &groove.structure, DEFAULT_HIGH_HAT_NOTE);
     let bass_string = gen_groovescribe_seq(&groove.bass, &groove.structure, DEFAULT_BASS_NOTE);
@@ -27,7 +27,7 @@ pub fn gen_groovescribe_link(groove: &Groove) {
         beat_to_url(&bass_string, &"K".to_string())
     );
 
-    println!("{}", url);
+    url
 }
 
 fn beat_to_url(beat: &String, letter: &String) -> String {
