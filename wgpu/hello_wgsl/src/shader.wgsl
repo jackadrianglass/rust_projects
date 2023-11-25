@@ -1,5 +1,10 @@
 // Vertex shader
 struct VertexOutput {
+	// This doesn't have the same value between the vertex shader and
+	// the fragment shader
+	// In the vertex shader, it's the vertex position in space
+	// In the fragment shader, it's the interpolated screen space coordinate
+	// which means that it's not likely to be between 0 and 1
 	@builtin(position) clip_position: vec4<f32>,
 	@location(0) position: vec2<f32>,
 };
