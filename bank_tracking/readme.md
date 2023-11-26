@@ -10,11 +10,12 @@ individual expenses that you're making on the regular.
 
 - [x] Write interactive prompt to sort through all of the transactions
 - [x] Split the transactions by month and store them
-- [ ] Remove duplicate transactions from newly entered statements
+- [x] Remove duplicate transactions from newly entered statements
+- [ ] Seperate the income from the rest of the expenses
 - [ ] Calculate spending trends bi-weekly
-    - [ ] Total expenses
-    - [ ] Total expenses by category
-    - [ ] Percentage of expenses by each category of total expenses
+    - [x] Total expenses
+    - [x] Total expenses by category
+    - [x] Percentage of expenses by each category of total expenses
     - [ ] Percentage of expenses by each category of total income
 - [ ] Calculate accumulation of funds in additional accounts over a period of time
 - [ ] Put all of these lovely statistics on a nice application front end that

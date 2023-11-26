@@ -29,12 +29,13 @@ enum Commands {
 
 fn categorize_transactions(transactions: &mut [Transaction]) {
     println!("Sort the transactions into these categories");
-    println!("0. Ignore");
-    println!("1. Essential Food");
-    println!("2. Food for fun");
-    println!("3. Recurring Expenses");
-    println!("4. Essential Expenses");
-    println!("5. Fun");
+    let print_categories = || {
+        println!("Please input a number");
+        for num in 0..8 {
+            println!("{}. {:?}", num, TransactionKind::from_usize(num).unwrap());
+        }
+    };
+    print_categories();
 
     for transaction in transactions.iter_mut() {
         println!(
@@ -49,11 +50,11 @@ fn categorize_transactions(transactions: &mut [Transaction]) {
                 .expect("Did not enter a correct string");
 
             let Ok(choice) = input.trim().parse::<usize>() else {
-                println!("Please input a number");
+                print_categories();
                 continue;
             };
 
-            if choice > 5 {
+            if choice > 7 {
                 println!("Input out of range");
                 continue;
             }
@@ -97,7 +98,7 @@ fn print_report(year: i32) {
         }
 
         let total: f32 = transactions.iter().map(|v| v.cad).sum();
-        println!("{year}/{month} total spent {total}$");
+        println!("{}/{} total spent {}$", year, month, total.abs());
         for (key, group) in &transactions
             .iter()
             .sorted_by_key(|v| v.kind)
@@ -107,8 +108,8 @@ fn print_report(year: i32) {
             let d = 7;
             let p = 3;
             println!(
-                "    {:d$.2}$ ({:p$.0}%) in {:?} ",
-                sum,
+                "- {:d$.2}$ ({:p$.0}%) in {:?} ",
+                sum.abs(),
                 100.0 * (sum / total),
                 key
             );
