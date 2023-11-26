@@ -1,5 +1,5 @@
 use bytemuck;
-use nalgebra::{vector, Point3};
+use nalgebra::vector;
 use wgpu::util::DeviceExt;
 use winit::window::Window;
 use winit::{
@@ -22,7 +22,6 @@ struct State {
     window: Window,
 
     render_pipeline: wgpu::RenderPipeline,
-    vertices: Vec<Vertex>,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
 }
@@ -130,9 +129,8 @@ impl State {
             multiview: None,
         });
         
-        let vertices = dragon_curve::dragon_curve(vector![-0.5, 0.0, 1.0].into(), vector![0.5, 0.0, 1.0].into(), 10);
+        let vertices = dragon_curve::dragon_curve(vector![0.0, -0.5, 1.0].into(), vector![0.0, 0.5, 1.0].into(), 10);
         let vertices: Vec<_> = vertices.iter().map(|p| Vertex { position: *p, color: vector![1.0, 0.0, 1.0].into()}).collect();
-        
 
         let num_vertices = vertices.len() as u32;
 
@@ -149,7 +147,6 @@ impl State {
             config,
             size,
             render_pipeline,
-            vertices,
             vertex_buffer,
             num_vertices,
         }

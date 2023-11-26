@@ -13,6 +13,3 @@ wgpu = "0.17"
 pollster = "0.3"
 nalgebra = { version = "0.32.3",  features = ["bytemuck", "convert-bytemuck"] }
 bytemuck = { version = "1.12", features = [ "derive"] }
-egui_winit_platform = "0.20.0"
-egui = "0.24.0"
-egui_wgpu_backend = "0.27.0"
