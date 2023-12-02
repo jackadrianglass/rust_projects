@@ -10,6 +10,7 @@ use winit::{
 use crate::vertex::Vertex;
 
 mod dragon_curve;
+mod hilbert_curve;
 mod vertex;
 
 
@@ -129,7 +130,8 @@ impl State {
             multiview: None,
         });
         
-        let vertices = dragon_curve::dragon_curve(vector![0.0, -0.5, 1.0].into(), vector![0.0, 0.5, 1.0].into(), 10);
+        // let vertices = dragon_curve::dragon_curve(vector![0.0, -0.5, 1.0].into(), vector![0.0, 0.5, 1.0].into(), 5);
+        let vertices = hilbert_curve::hilbert_curve(3);
         let vertices: Vec<_> = vertices.iter().map(|p| Vertex { position: *p, color: vector![1.0, 0.0, 1.0].into()}).collect();
 
         let num_vertices = vertices.len() as u32;
