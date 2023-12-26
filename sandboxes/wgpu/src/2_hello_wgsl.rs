@@ -113,7 +113,7 @@ impl State {
         // Loads the shader pipeline into the program
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("1_hello_wgsl.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("2_hello_wgsl.wgsl").into()),
         });
 
         let render_pipeline_layout =

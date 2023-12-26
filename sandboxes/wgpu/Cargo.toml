@@ -7,11 +7,15 @@ edition = "2021"
 
 [[bin]]
 name = "1_hello_wgpu"
-path = "src/2_hello_wgpu.rs"
+path = "src/1_hello_wgpu.rs"
 
 [[bin]]
 name = "2_hello_wgsl"
-path = "src/2_hello_wgpu.rs"
+path = "src/2_hello_wgsl.rs"
+
+[[bin]]
+name = "3_buffers"
+path = "src/3_buffers.rs"
 
 [dependencies]
 winit = "0.28"
@@ -19,3 +23,4 @@ env_logger = "0.10"
 log = "0.4"
 wgpu = "0.17"
 pollster = "0.3"
+bytemuck = { version = "1.12", features = [ "derive"] }
