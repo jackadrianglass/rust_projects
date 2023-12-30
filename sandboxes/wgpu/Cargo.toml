@@ -17,6 +17,10 @@ path = "src/2_hello_wgsl.rs"
 name = "3_buffers"
 path = "src/3_buffers.rs"
 
+[[bin]]
+name = "4_instancing"
+path = "src/4_instancing.rs"
+
 [dependencies]
 winit = "0.28"
 env_logger = "0.10"
