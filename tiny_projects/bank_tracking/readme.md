@@ -8,17 +8,7 @@ individual expenses that you're making on the regular.
 
 # TODO
 
-- [x] Write interactive prompt to sort through all of the transactions
-- [x] Split the transactions by month and store them
-- [x] Remove duplicate transactions from newly entered statements
-- [ ] Seperate the income from the rest of the expenses
-- [ ] Calculate spending trends bi-weekly
-    - [x] Total expenses
-    - [x] Total expenses by category
-    - [x] Percentage of expenses by each category of total expenses
-    - [ ] Percentage of expenses by each category of total income
-- [ ] Calculate accumulation of funds in additional accounts over a period of time
-- [ ] Put all of these lovely statistics on a nice application front end that
-      you can view in all of its glory
-- [x] Have the sorting have shortcuts through the number pad
-- [ ] Add runtime configurable tags for each expense through letters
+- [ ] Add income tracking
+- [ ] Add undo operation for the sorting stuff
+- [ ] Seperate the income from the rest of the expenses in the report
+- [ ] Add an environment file to specify the storage directories and backup directories

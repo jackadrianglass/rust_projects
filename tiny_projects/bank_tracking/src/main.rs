@@ -91,6 +91,8 @@ fn print_report(year: i32) {
     let data_path = Path::new("storage/");
 
     for month in 1..=12 {
+        println!("");
+
         let transactions = read_month(data_path, year, month);
         if transactions.is_empty() {
             println!("{year}/{month} no records");
