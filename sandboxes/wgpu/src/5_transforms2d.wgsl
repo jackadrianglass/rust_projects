@@ -1,5 +1,10 @@
 // Vertex shader
 
+struct SimpleUniform {
+    translation: vec2<f32>,
+    color: vec3<f32>,
+};
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
 };
