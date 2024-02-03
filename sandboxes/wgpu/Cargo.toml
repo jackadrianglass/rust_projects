@@ -6,28 +6,32 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "1_hello_wgpu"
+name = "hello_wgpu"
 path = "src/1_hello_wgpu.rs"
 
 [[bin]]
-name = "2_hello_wgsl"
+name = "hello_wgsl"
 path = "src/2_hello_wgsl.rs"
 
 [[bin]]
-name = "3_buffers"
+name = "buffers"
 path = "src/3_buffers.rs"
 
 [[bin]]
-name = "4_instancing"
+name = "instancing"
 path = "src/4_instancing.rs"
 
 [[bin]]
-name = "5_transforms2d"
+name = "transforms2d"
 path = "src/5_transforms2d.rs"
 
 [[bin]]
-name = "6_textures"
+name = "textures"
 path = "src/6_textures.rs"
+
+[[bin]]
+name = "uniforms"
+path = "./src/7_uniforms_and_camera.rs"
 
 [dependencies]
 winit = "0.28"
@@ -37,6 +41,7 @@ wgpu = "0.17"
 pollster = "0.3"
 bytemuck = { version = "1.12", features = [ "derive"] }
 anyhow = "1.0"
+cgmath = "0.18.0"
 
 
 [dependencies.image]
