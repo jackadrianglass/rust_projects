@@ -33,6 +33,10 @@ path = "src/6_textures.rs"
 name = "uniforms"
 path = "./src/7_uniforms_and_camera.rs"
 
+[[bin]]
+name = "instancing_again"
+path = "./src/8_instancing_again.rs"
+
 [dependencies]
 winit = "0.28"
 env_logger = "0.10"
