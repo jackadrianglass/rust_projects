@@ -37,6 +37,10 @@ path = "./src/7_uniforms_and_camera.rs"
 name = "instancing_again"
 path = "./src/8_instancing_again.rs"
 
+[[bin]]
+name = "depth_buffer"
+path = "./src/9_depth_buffer.rs"
+
 [dependencies]
 winit = "0.28"
 env_logger = "0.10"
