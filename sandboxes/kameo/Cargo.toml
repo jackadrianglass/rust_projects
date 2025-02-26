@@ -1,0 +1,19 @@
+[package]
+name = "kameo_sandbox"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.96"
+futures = "0.3.31"
+kameo = "0.14.0"
+tokio = { version = "1.43.0", features = ["full"] }
+
+[[bin]]
+name = "hello_world"
+
+[[bin]]
+name = "actors_messaging"
+
+[[bin]]
+name = "actor_spawning_actors"
