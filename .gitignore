@@ -2,3 +2,4 @@ GI*
 *output*
 **/target/
 .idea/
+**/.DS_Store
